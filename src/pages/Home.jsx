@@ -6,8 +6,9 @@ import {
   Modal,
   Form,
   Input,
-  InputNumber,
   Select,
+  Popconfirm,
+  Space,
 } from "antd";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
@@ -22,6 +23,8 @@ const Home = () => {
   const [errors, setErrors] = useState(null);
 
   const [open, setOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+
   const [form] = Form.useForm();
 
   const [params, setParams] = useState({
@@ -31,20 +34,6 @@ const Home = () => {
     sortBy: "id",
     sortDescending: true,
   });
-
-  const columns = [
-    { title: "Name", dataIndex: "name", key: "name", sorter: true },
-    { title: "City", dataIndex: "city", key: "city" },
-    { title: "Address", dataIndex: "address", key: "address" },
-    {
-      title: "Customer Type Name",
-      dataIndex: "customerTypeName",
-      key: "customerTypeName",
-    },
-    { title: "State", dataIndex: "state", key: "state" },
-    { title: "Zip", dataIndex: "zip", key: "zip" },
-    { title: "Description", dataIndex: "description", key: "description" },
-  ];
 
   const fetchCustomers = async () => {
     try {
@@ -61,8 +50,8 @@ const Home = () => {
       });
 
       setData(res.data);
-    } catch (err) {
-      setErrors(err.message);
+    } catch ({ response }) {
+      setErrors(response?.data?.errors?.State || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -82,31 +71,105 @@ const Home = () => {
     }));
   };
 
-  const handleCreateCustomer = async (values) => {
+  const handleSubmit = async (values) => {
     try {
       setLoading(true);
 
-      await api.post("/Customers", values);
+      if (editingCustomer) {
+        await api.put(`/Customers/${editingCustomer.id}`, values);
+      } else {
+        await api.post("/Customers", values);
+      }
 
       form.resetFields();
+      setEditingCustomer(null);
       setOpen(false);
       fetchCustomers();
-    } catch (err) {
-      setErrors(err.message);
+    } catch ({ response }) {
+      console.log({ response });
+      setErrors(response?.data?.errors?.State || "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEdit = (record) => {
+    setEditingCustomer(record);
+
+    form.setFieldsValue({
+      name: record.name,
+      description: record.description,
+      address: record.address,
+      city: record.city,
+      state: record.state,
+      zip: record.zip,
+      customerTypeId: record.customerTypeId,
+    });
+
+    setOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      setLoading(true);
+
+      await api.delete(`/Customers/${id}`);
+
+      fetchCustomers();
+    } catch ({ response }) {
+      setErrors(response?.data?.errors?.State || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const columns = [
+    { title: "Name", dataIndex: "name", key: "name", sorter: true },
+    { title: "City", dataIndex: "city", key: "city" },
+    { title: "Address", dataIndex: "address", key: "address" },
+    {
+      title: "Customer Type Name",
+      dataIndex: "customerTypeName",
+      key: "customerTypeName",
+    },
+    { title: "State", dataIndex: "state", key: "state" },
+    { title: "Zip", dataIndex: "zip", key: "zip" },
+    { title: "Description", dataIndex: "description", key: "description" },
+
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <Space>
+          <Button onClick={() => handleEdit(record)}>Edit</Button>
+
+          <Popconfirm
+            title="Delete customer?"
+            onConfirm={() => handleDelete(record.id)}
+          >
+            <Button danger>Delete</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+  console.log({ errors });
   return (
     <section style={{ margin: "50px" }}>
       <Flex gap="middle" vertical>
-        {errors && <Alert type="error" message={errors} />}
+        {/* {errors && <Alert type="error" message={errors} />} */}
 
         <Flex justify="space-between">
           <h2>Customers List ({data.totalCount})</h2>
 
-          <Button type="primary" onClick={() => setOpen(true)}>
+          <Button
+            type="primary"
+            onClick={() => {
+              setEditingCustomer(null);
+              form.resetFields();
+              setOpen(true);
+            }}
+          >
             Add Customer
           </Button>
         </Flex>
@@ -126,12 +189,16 @@ const Home = () => {
         />
 
         <Modal
-          title="Create Customer"
+          title={editingCustomer ? "Edit Customer" : "Create Customer"}
           open={open}
-          onCancel={() => setOpen(false)}
+          onCancel={() => {
+            setOpen(false);
+            setEditingCustomer(null);
+            form.resetFields();
+          }}
           footer={null}
         >
-          <Form form={form} layout="vertical" onFinish={handleCreateCustomer}>
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item name="name" label="Name" rules={[{ required: true }]}>
               <Input />
             </Form.Item>
@@ -149,7 +216,7 @@ const Home = () => {
             </Form.Item>
 
             <Form.Item name="state" label="State">
-              <Input maxLength={2} />
+              <Input />
             </Form.Item>
 
             <Form.Item name="zip" label="Zip">
@@ -158,7 +225,7 @@ const Home = () => {
 
             <Form.Item
               name="customerTypeId"
-              label="Customer Type Id"
+              label="Customer Type"
               rules={[{ required: true }]}
             >
               <Select
@@ -171,7 +238,7 @@ const Home = () => {
             </Form.Item>
 
             <Button type="primary" htmlType="submit" block loading={loading}>
-              Save Customer
+              {editingCustomer ? "Update Customer" : "Save Customer"}
             </Button>
           </Form>
         </Modal>
