@@ -124,7 +124,13 @@ const Home = () => {
   };
 
   const columns = [
-    { title: "Name", dataIndex: "name", key: "name", sorter: true },
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      sorter: true,
+      render: (text) => <u>{text}</u>,
+    },
     { title: "City", dataIndex: "city", key: "city" },
     { title: "Address", dataIndex: "address", key: "address" },
     {
@@ -153,11 +159,13 @@ const Home = () => {
       ),
     },
   ];
-  console.log({ errors });
+
   return (
     <section style={{ margin: "50px" }}>
       <Flex gap="middle" vertical>
-        {/* {errors && <Alert type="error" message={errors} />} */}
+        {errors?.length > 0 && (
+          <Alert type="error" message={errors?.join(", ")} closable />
+        )}
 
         <Flex justify="space-between">
           <h2>Customers List ({data.totalCount})</h2>
@@ -183,7 +191,6 @@ const Home = () => {
             current: params.pageNumber,
             pageSize: params.pageSize,
             total: data.totalCount,
-            showSizeChanger: true,
           }}
           onChange={handleTableChange}
         />
