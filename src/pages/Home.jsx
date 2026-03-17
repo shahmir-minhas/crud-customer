@@ -9,7 +9,6 @@ import {
   Select,
   Popconfirm,
   Space,
-  Grid,
   Row,
   Col,
 } from "antd";
@@ -264,6 +263,7 @@ const Home = () => {
             </Button>
           </Form>
         </Modal>
+
         <Modal
           title={"View Customer Details"}
           open={!!viewDetails}
