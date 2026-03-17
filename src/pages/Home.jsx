@@ -9,6 +9,9 @@ import {
   Select,
   Popconfirm,
   Space,
+  Grid,
+  Row,
+  Col,
 } from "antd";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
@@ -24,6 +27,7 @@ const Home = () => {
 
   const [open, setOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [viewDetails, setViewDetails] = useState(null);
 
   const [form] = Form.useForm();
 
@@ -123,13 +127,24 @@ const Home = () => {
     }
   };
 
+  const handleViewDetails = (record) => {
+    setViewDetails(record);
+  };
+
   const columns = [
     {
       title: "Name",
       dataIndex: "name",
       key: "name",
       sorter: true,
-      render: (text) => <u>{text}</u>,
+      render: (text, record) => (
+        <u
+          style={{ cursor: "pointer" }}
+          onClick={() => handleViewDetails(record)}
+        >
+          {text}
+        </u>
+      ),
     },
     { title: "City", dataIndex: "city", key: "city" },
     { title: "Address", dataIndex: "address", key: "address" },
@@ -248,6 +263,30 @@ const Home = () => {
               {editingCustomer ? "Update Customer" : "Save Customer"}
             </Button>
           </Form>
+        </Modal>
+        <Modal
+          title={"View Customer Details"}
+          open={!!viewDetails}
+          onCancel={() => {
+            setViewDetails(null);
+          }}
+          footer={null}
+          closable={false}
+        >
+          <Row>
+            {viewDetails &&
+              columns?.slice(0, 7)?.map((col) => (
+                <Col span={12}>
+                  <div>
+                    <h3>{col.title}</h3>
+                    <p>{viewDetails[col.dataIndex]}</p>
+                  </div>
+                </Col>
+              ))}
+          </Row>
+          <Button type="primary" onClick={() => setViewDetails(null)} block>
+            Close
+          </Button>
         </Modal>
       </Flex>
     </section>
